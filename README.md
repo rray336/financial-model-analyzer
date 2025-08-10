@@ -87,9 +87,9 @@ financial_model_analyzer/
 │   │   └── utils/          # Utility functions
 │   └── public/             # Static assets
 ├── Models/                 # Sample Excel models
-│   ├── BC/                # Barclays models
-│   ├── BOFA/              # Bank of America models
-│   └── GS/                # Goldman Sachs models
+│   ├── Model1/            # Model1 models
+│   ├── Model2/            # Model2 models
+│   └── Model3/            # Model3 models
 ├── BUILD_PLAN.md          # Detailed implementation plan
 └── PROJECT_PLAN.md        # High-level project overview
 ```

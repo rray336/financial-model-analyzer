@@ -1,0 +1,42 @@
+{
+  "name": "financial-model-analyzer",
+  "version": "1.0.0",
+  "description": "Universal Excel financial model comparison tool with AI-powered variance analysis",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "test": "concurrently \"npm run test:backend\" \"npm run test:frontend\"",
+    "test:backend": "cd backend && python -m pytest",
+    "test:frontend": "cd frontend && npm run test",
+    "cleanup": "python scripts/cleanup_session.py",
+    "cleanup:execute": "python scripts/cleanup_session.py --execute",
+    "cleanup:full": "python scripts/cleanup_session.py --execute --categories test_files cache logs runtime system",
+    "cleanup:safe": "python scripts/cleanup_session.py --execute --categories test_files cache logs",
+    "install": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && pip install -r requirements.txt",
+    "install:frontend": "cd frontend && npm install",
+    "start": "npm run dev",
+    "lint": "npm run lint:frontend",
+    "lint:frontend": "cd frontend && npm run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "financial-modeling",
+    "excel-analysis",
+    "variance-analysis",
+    "fastapi",
+    "react",
+    "typescript"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=16.0.0",
+    "python": ">=3.8.0"
+  }
+}

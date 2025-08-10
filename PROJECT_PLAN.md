@@ -45,8 +45,8 @@ Dual Excel Upload → Format Validation → Structure Detection → Period Align
 - Clear all current data when new files uploaded
 - Maintain same upload validation logic but reset state completely
 
-#### 1.3 Remove BOFA-Specific Logic
-- **Remove**: `BOFARevenueAnalyzer` class and hardcoded revenue segments
+#### 1.3 Remove Model2-Specific Logic
+- **Remove**: `Model2RevenueAnalyzer` class and hardcoded revenue segments
 - **Remove**: Hardcoded period-to-column mappings
 - **Replace**: Generic Excel parser that works with any financial model structure
 
@@ -58,11 +58,12 @@ Dual Excel Upload → Format Validation → Structure Detection → Period Align
 - **Validation**: Ensure selected sheets exist in both Old and New models
 - **Flexibility**: No assumptions about sheet naming conventions
 
-#### 2.2 Generic Excel Parser (`services/universal_parser.py`)
-- **Remove BOFA Dependencies**: No hardcoded revenue segments or specific cell references
-- **Universal Structure Detection**: Work with any Excel model structure
+#### 2.2 Consolidated Excel Parser (`services/dual_parser.py`)
+- **Unified Architecture**: Single parser handles both universal compatibility and dual model processing
+- **Universal Structure Detection**: Work with any Excel model structure without hardcoded dependencies
 - **Row-Flexible Matching**: Match line items by name regardless of row position
 - **Formula Analysis**: Parse Excel formulas to build drill-down relationships
+- **Advanced Features**: Template-based period detection, drill-down analysis, fuzzy matching
 
 Key Features:
 - Flexible period detection from column headers using extensible regex patterns
@@ -156,7 +157,7 @@ class VarianceDetail:
 ```
 
 #### 5.2 Implementation Steps Priority
-1. **Remove BOFA-specific code** (quick cleanup)
+1. **Remove Model2-specific code** (quick cleanup)
 2. **Add "New Analysis" button** (simple UI addition)
 3. **Build sheet selection interface** (critical user experience)
 4. **Implement universal period detection** (extensible regex patterns)
@@ -200,10 +201,10 @@ def match_line_items(old_items, new_items):
 ### Phase 7: Revised Development Timeline
 
 #### 7.1 Week 1-2: Cleanup & Foundation
-- **Remove BOFA-specific code**: Clean out hardcoded logic
+- **Remove Model2-specific code**: Clean out hardcoded logic
 - **Add "New Analysis" button**: Simple upload reset functionality
 - **Build sheet selection UI**: Dropdown interface for IS/BS/CF selection
-- **Test with current BOFA models**: Ensure backwards compatibility
+- **Test with current Model2 models**: Ensure backwards compatibility
 
 #### 7.2 Week 3-4: Universal Parser
 - **Implement period detection**: Extensible regex patterns
@@ -232,21 +233,21 @@ def match_line_items(old_items, new_items):
 ### Phase 8: Success Metrics & Key Differences
 
 #### 8.1 Revised Success Metrics
-- **Universal Compatibility**: Work with any two Excel files with similar structure (not just BOFA models)
+- **Universal Compatibility**: Work with any two Excel files with similar structure (not just Model2 models)
 - **User-Driven Configuration**: Sheet selection eliminates auto-detection complexity
 - **Formula-Based Intelligence**: Drill-down based on actual Excel formulas, not hardcoded hierarchies  
 - **Simplified State Management**: File replacement instead of session management
 - **Period Flexibility**: Dynamic detection from any Excel model structure
 
 #### 8.2 Key Architectural Changes
-- **From**: Hardcoded BOFA revenue segments → **To**: Generic line item matching
+- **From**: Hardcoded Model2 revenue segments → **To**: Generic line item matching
 - **From**: Complex session management → **To**: Simple state replacement  
 - **From**: Assumed sheet names → **To**: User-selected sheets
 - **From**: Fixed period mappings → **To**: Dynamic period detection
 - **From**: Predefined hierarchies → **To**: Formula-based drill-down trees
 
 #### 8.3 Implementation Simplifications
-- **Removed Complexity**: No more GUID session tracking, BOFA-specific parsing, hardcoded mappings
+- **Removed Complexity**: No more GUID session tracking, Model2-specific parsing, hardcoded mappings
 - **Added Flexibility**: Works with any Excel model, user-driven configuration, extensible patterns
 - **Maintained Power**: Full drill-down capabilities, variance analysis, side-by-side comparison
 
@@ -275,7 +276,7 @@ def match_line_items(old_items, new_items):
 
 ## Revised Development Timeline
 
-**Week 1-2**: Remove BOFA code, add "New Analysis" button, build sheet selection UI
+**Week 1-2**: Remove Model2 code, add "New Analysis" button, build sheet selection UI
 **Week 3-4**: Universal period detection, line item matching, basic variance calculation  
 **Week 5-6**: Side-by-side variance display, statement selection, period dropdown
 **Week 7-8**: Formula parsing, dependency mapping, drill-down functionality

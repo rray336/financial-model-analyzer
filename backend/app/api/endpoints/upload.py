@@ -10,7 +10,7 @@ from datetime import datetime
 
 from app.models.comparison import SessionResponse
 from app.core.config import settings
-from app.services.dual_parser import DualExcelParser
+from app.services.universal_parser import UniversalExcelParser
 from app.services.universal_parser import UniversalExcelParser
 import openpyxl
 
@@ -67,7 +67,7 @@ async def upload_model_pair(
         # Start processing immediately
         try:
             # Initialize parser
-            parser = DualExcelParser()
+            parser = UniversalExcelParser()
             
             logger.info(f"📁 Processing files: {old_file.filename} vs {new_file.filename}")
             
@@ -134,7 +134,7 @@ async def process_models(session_id: str):
         session["status"] = "processing"
         
         # Initialize parser
-        parser = DualExcelParser()
+        parser = UniversalExcelParser()
         
         # Parse models with actual implementation
         old_model, new_model, consistency_check = await parser.parse_model_pair(
