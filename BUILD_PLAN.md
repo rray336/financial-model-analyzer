@@ -2,8 +2,6 @@
 
 ## Overview
 
-This document outlines the detailed implementation plan for building the Financial Model Analyzer - a dual Excel model comparison tool with AI-powered variance analysis and unlimited drill-down capabilities.
-
 ## Development Phases
 
 ### Phase 1: Foundation & Core Infrastructure (Week 1-2)
@@ -13,6 +11,7 @@ This document outlines the detailed implementation plan for building the Financi
 **Objective**: Establish the complete project structure and development environment
 
 **Backend Structure:**
+
 ```
 backend/
 ├── app/
@@ -50,6 +49,7 @@ backend/
 ```
 
 **Frontend Structure:**
+
 ```
 frontend/
 ├── src/
@@ -98,6 +98,7 @@ frontend/
 **Key Dependencies:**
 
 Backend:
+
 ```python
 # requirements.txt
 fastapi==0.104.1
@@ -112,6 +113,7 @@ scipy==1.11.4
 ```
 
 Frontend:
+
 ```json
 {
   "dependencies": {
@@ -129,6 +131,7 @@ Frontend:
 ```
 
 **Deliverables:**
+
 - [ ] Complete project structure created
 - [ ] Virtual environment set up with dependencies
 - [ ] Git repository initialized
@@ -147,12 +150,14 @@ Frontend:
 **File**: `backend/app/services/dual_parser.py`
 
 **Key Features:**
+
 - Dual file processing with consistency validation
 - Smart sheet detection for financial statements
 - Period detection and alignment
 - Data extraction with flexible row/column handling
 
 **Core Algorithm:**
+
 ```python
 class DualExcelParser:
     def parse_model_pair(self, old_file_path: str, new_file_path: str) -> ModelComparison:
@@ -164,22 +169,24 @@ class DualExcelParser:
 ```
 
 **Sheet Detection Logic:**
+
 ```python
 def detect_sheet_type(sheet_name: str, sheet_data: DataFrame) -> SheetType:
     # Keywords for Income Statement
     income_keywords = ["income", "p&l", "profit", "loss", "revenue", "sales"]
-    
-    # Keywords for Balance Sheet  
+
+    # Keywords for Balance Sheet
     balance_keywords = ["balance", "sheet", "assets", "liabilities", "equity"]
-    
+
     # Keywords for Cash Flow
     cashflow_keywords = ["cash", "flow", "operating", "investing", "financing"]
-    
+
     # Analyze sheet name and content
     # Return SheetType enum
 ```
 
 **Deliverables:**
+
 - [ ] `DualExcelParser` class implemented
 - [ ] Sheet type detection working
 - [ ] Basic data extraction functional
@@ -193,12 +200,14 @@ def detect_sheet_type(sheet_name: str, sheet_data: DataFrame) -> SheetType:
 **File**: `backend/app/services/structure_detector.py`
 
 **Key Features:**
+
 - Within-sheet hierarchy analysis
 - Parent-child relationship mapping
 - Formula vs hard-coded value classification
 - Drill-down path generation
 
 **Core Algorithm:**
+
 ```python
 class StructureDetector:
     def detect_hierarchy(self, sheet_data: DataFrame) -> HierarchyTree:
@@ -210,19 +219,21 @@ class StructureDetector:
 ```
 
 **Hierarchy Detection Logic:**
+
 ```python
 def analyze_indentation_patterns(self, sheet_data: DataFrame) -> List[HierarchyLevel]:
     hierarchy_levels = []
-    
+
     for index, row in sheet_data.iterrows():
         # Check cell formatting, indentation, font weight
         # Determine hierarchy level based on visual cues
         # Build structured representation
-        
+
     return hierarchy_levels
 ```
 
 **Deliverables:**
+
 - [ ] `StructureDetector` class implemented
 - [ ] Hierarchy detection algorithm working
 - [ ] Formula vs value classification
@@ -240,16 +251,18 @@ def analyze_indentation_patterns(self, sheet_data: DataFrame) -> List[HierarchyL
 **File**: `backend/app/services/variance_calculator.py`
 
 **Key Features:**
+
 - Multi-level variance computation
 - Period alignment between different model horizons
 - Price/volume decomposition where possible
 - Statistical significance assessment
 
 **Core Implementation:**
+
 ```python
 class VarianceCalculator:
-    def calculate_comprehensive_variance(self, 
-                                       old_model: FinancialModel, 
+    def calculate_comprehensive_variance(self,
+                                       old_model: FinancialModel,
                                        new_model: FinancialModel,
                                        hierarchy: HierarchyTree) -> VarianceAnalysis:
         # 1. Align periods between models
@@ -260,8 +273,9 @@ class VarianceCalculator:
 ```
 
 **Variance Attribution Logic:**
+
 ```python
-def decompose_variance(self, old_value: float, new_value: float, 
+def decompose_variance(self, old_value: float, new_value: float,
                       components: Dict[str, Tuple[float, float]]) -> VarianceDecomposition:
     # Attempt price/volume decomposition where model structure supports it
     # Fall back to component-level attribution
@@ -269,6 +283,7 @@ def decompose_variance(self, old_value: float, new_value: float,
 ```
 
 **Deliverables:**
+
 - [ ] `VarianceCalculator` class implemented
 - [ ] Multi-level variance computation working
 - [ ] Period alignment functionality
@@ -279,7 +294,8 @@ def decompose_variance(self, old_value: float, new_value: float,
 
 **Objective**: Complete the data model structure and API endpoints
 
-**Files**: 
+**Files**:
+
 - `backend/app/models/financial.py`
 - `backend/app/models/comparison.py`
 - `backend/app/models/variance.py`
@@ -287,6 +303,7 @@ def decompose_variance(self, old_value: float, new_value: float,
 - `backend/app/api/endpoints/analysis.py`
 
 **Key Data Models:**
+
 ```python
 # financial.py
 class FinancialModel(BaseModel):
@@ -314,12 +331,13 @@ class VarianceAnalysis(BaseModel):
 ```
 
 **API Endpoints:**
+
 ```python
 # upload.py
 @router.post("/upload-models")
 async def upload_model_pair(old_file: UploadFile, new_file: UploadFile) -> SessionResponse
 
-# analysis.py  
+# analysis.py
 @router.get("/structure/{session_id}")
 async def get_model_structure(session_id: str) -> HierarchyTree
 
@@ -328,6 +346,7 @@ async def get_variance_analysis(session_id: str, hierarchy_path: str) -> Varianc
 ```
 
 **Deliverables:**
+
 - [ ] Complete data model implementation
 - [ ] API endpoints functional
 - [ ] Session management working
@@ -343,30 +362,39 @@ async def get_variance_analysis(session_id: str, hierarchy_path: str) -> Varianc
 **Objective**: Establish the React frontend with proper architecture
 
 **Key Components:**
+
 - TypeScript configuration
 - Tailwind CSS setup
 - API service layer
 - Common UI components
 
 **API Service Layer:**
+
 ```typescript
 // services/api.ts
 export class AnalysisAPI {
-  async uploadModelPair(oldFile: File, newFile: File): Promise<SessionResponse>
-  async getModelStructure(sessionId: string): Promise<HierarchyTree>
-  async getVarianceAnalysis(sessionId: string, hierarchyPath: string): Promise<VarianceDetail>
-  async generateCommentary(sessionId: string, hierarchyPath: string): Promise<Commentary>
+  async uploadModelPair(oldFile: File, newFile: File): Promise<SessionResponse>;
+  async getModelStructure(sessionId: string): Promise<HierarchyTree>;
+  async getVarianceAnalysis(
+    sessionId: string,
+    hierarchyPath: string
+  ): Promise<VarianceDetail>;
+  async generateCommentary(
+    sessionId: string,
+    hierarchyPath: string
+  ): Promise<Commentary>;
 }
 ```
 
 **Common Components:**
+
 ```typescript
 // components/common/Button.tsx
 interface ButtonProps {
-  variant: 'primary' | 'secondary' | 'outline'
-  size: 'sm' | 'md' | 'lg'
-  onClick: () => void
-  children: React.ReactNode
+  variant: "primary" | "secondary" | "outline";
+  size: "sm" | "md" | "lg";
+  onClick: () => void;
+  children: React.ReactNode;
 }
 
 // components/common/LoadingSpinner.tsx
@@ -374,6 +402,7 @@ interface ButtonProps {
 ```
 
 **Deliverables:**
+
 - [ ] React app with TypeScript configured
 - [ ] Tailwind CSS integrated
 - [ ] API service layer implemented
@@ -387,30 +416,33 @@ interface ButtonProps {
 **File**: `frontend/src/components/upload/DualFileUpload.tsx`
 
 **Key Features:**
+
 - Side-by-side Old/New model upload areas
 - Drag-and-drop functionality
 - File validation and error handling
 - Upload progress indicators
 
 **Component Structure:**
+
 ```typescript
 interface DualFileUploadProps {
-  onUploadComplete: (sessionId: string) => void
-  onError: (error: string) => void
+  onUploadComplete: (sessionId: string) => void;
+  onError: (error: string) => void;
 }
 
 export const DualFileUpload: React.FC<DualFileUploadProps> = ({
   onUploadComplete,
-  onError
+  onError,
 }) => {
   // Dual dropzone implementation
   // File validation logic
   // Upload progress tracking
   // Error state handling
-}
+};
 ```
 
 **Deliverables:**
+
 - [ ] `DualFileUpload` component implemented
 - [ ] Drag-and-drop functionality working
 - [ ] File validation and error handling
@@ -428,36 +460,39 @@ export const DualFileUpload: React.FC<DualFileUploadProps> = ({
 **File**: `frontend/src/components/dashboard/VarianceDashboard.tsx`
 
 **Key Features:**
+
 - Executive summary with key variances
 - KPI comparison cards
 - Period analysis toggle
 - Navigation to drill-down levels
 
 **Component Architecture:**
+
 ```typescript
 interface VarianceDashboardProps {
-  sessionId: string
-  hierarchyPath?: string
+  sessionId: string;
+  hierarchyPath?: string;
 }
 
 export const VarianceDashboard: React.FC<VarianceDashboardProps> = ({
   sessionId,
-  hierarchyPath = ''
+  hierarchyPath = "",
 }) => {
   // Load variance data for current level
   // Render executive summary or level-specific analysis
   // Provide navigation options for drill-down
-}
+};
 ```
 
 **KPI Cards Implementation:**
+
 ```typescript
 interface KPICardProps {
-  title: string
-  oldValue: number
-  newValue: number
-  variance: VarianceDetail
-  onClick: () => void
+  title: string;
+  oldValue: number;
+  newValue: number;
+  variance: VarianceDetail;
+  onClick: () => void;
 }
 
 export const KPICard: React.FC<KPICardProps> = ({
@@ -465,16 +500,17 @@ export const KPICard: React.FC<KPICardProps> = ({
   oldValue,
   newValue,
   variance,
-  onClick
+  onClick,
 }) => {
   // Display side-by-side comparison
   // Show absolute and percentage variance
   // Highlight significant changes
   // Enable click-to-drill-down
-}
+};
 ```
 
 **Deliverables:**
+
 - [ ] `VarianceDashboard` component implemented
 - [ ] Executive summary display
 - [ ] KPI comparison cards
@@ -486,36 +522,39 @@ export const KPICard: React.FC<KPICardProps> = ({
 **Objective**: Implement storytelling navigation with breadcrumb trail
 
 **Files**:
+
 - `frontend/src/components/navigation/BreadcrumbNavigation.tsx`
 - `frontend/src/components/navigation/TreeViewToggle.tsx`
 
 **Breadcrumb Implementation:**
+
 ```typescript
 interface BreadcrumbNavigationProps {
-  currentPath: string[]
-  hierarchyTree: HierarchyTree
-  onNavigate: (path: string[]) => void
+  currentPath: string[];
+  hierarchyTree: HierarchyTree;
+  onNavigate: (path: string[]) => void;
 }
 
 export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   currentPath,
   hierarchyTree,
-  onNavigate
+  onNavigate,
 }) => {
   // Render clickable breadcrumb trail
   // Show variance context at each level
   // Enable navigation to any point in path
-}
+};
 ```
 
 **Tree View Toggle:**
+
 ```typescript
 interface TreeViewToggleProps {
-  hierarchyTree: HierarchyTree
-  currentPath: string[]
-  onNavigate: (path: string[]) => void
-  isTreeViewActive: boolean
-  onToggle: () => void
+  hierarchyTree: HierarchyTree;
+  currentPath: string[];
+  onNavigate: (path: string[]) => void;
+  isTreeViewActive: boolean;
+  onToggle: () => void;
 }
 
 export const TreeViewToggle: React.FC<TreeViewToggleProps> = ({
@@ -523,15 +562,16 @@ export const TreeViewToggle: React.FC<TreeViewToggleProps> = ({
   currentPath,
   onNavigate,
   isTreeViewActive,
-  onToggle
+  onToggle,
 }) => {
   // Render full hierarchy tree
   // Highlight current position
   // Enable multi-dimensional navigation
-}
+};
 ```
 
 **Deliverables:**
+
 - [ ] Breadcrumb navigation working
 - [ ] Tree view toggle implemented
 - [ ] Smooth navigation between levels
@@ -549,19 +589,21 @@ export const TreeViewToggle: React.FC<TreeViewToggleProps> = ({
 **File**: `backend/app/services/ai_commentary.py`
 
 **Key Features:**
+
 - Level-specific commentary generation
 - Business inference and model logic analysis
 - Context-aware prompt engineering
 - Commentary caching for performance
 
 **Implementation:**
+
 ```python
 class AICommentaryService:
     def __init__(self, anthropic_client: Anthropic):
         self.client = anthropic_client
         self.cache = CommentaryCache()
-    
-    async def generate_commentary(self, 
+
+    async def generate_commentary(self,
                                 variance_detail: VarianceDetail,
                                 hierarchy_context: HierarchyContext,
                                 model_logic: ModelLogic) -> Commentary:
@@ -572,20 +614,21 @@ class AICommentaryService:
 ```
 
 **Prompt Engineering:**
+
 ```python
-def build_commentary_prompt(self, 
+def build_commentary_prompt(self,
                           variance_detail: VarianceDetail,
                           context: HierarchyContext) -> str:
     prompt = f"""
     You are analyzing financial model variances for {context.company_name}.
-    
+
     Current Analysis Level: {context.hierarchy_path}
-    Variance: {variance_detail.old_value} → {variance_detail.new_value} 
+    Variance: {variance_detail.old_value} → {variance_detail.new_value}
     ({variance_detail.percentage_change}%)
-    
+
     Model Logic Context:
     {context.detected_formulas}
-    
+
     Please provide:
     1. Executive summary of the variance
     2. Most likely business drivers
@@ -595,6 +638,7 @@ def build_commentary_prompt(self,
 ```
 
 **Deliverables:**
+
 - [ ] `AICommentaryService` implemented
 - [ ] Context-aware prompt generation
 - [ ] Business inference logic
@@ -608,36 +652,43 @@ def build_commentary_prompt(self,
 **File**: `frontend/src/components/commentary/AICommentaryPanel.tsx`
 
 **Key Features:**
+
 - Level-specific AI insights
 - Loading states and regeneration
 - Cross-reference navigation links
 - Commentary history
 
 **Component Implementation:**
+
 ```typescript
 interface AICommentaryPanelProps {
-  sessionId: string
-  hierarchyPath: string
-  varianceDetail: VarianceDetail
+  sessionId: string;
+  hierarchyPath: string;
+  varianceDetail: VarianceDetail;
 }
 
 export const AICommentaryPanel: React.FC<AICommentaryPanelProps> = ({
   sessionId,
   hierarchyPath,
-  varianceDetail
+  varianceDetail,
 }) => {
-  const { data: commentary, isLoading, refetch } = useQuery({
-    queryKey: ['commentary', sessionId, hierarchyPath],
-    queryFn: () => api.generateCommentary(sessionId, hierarchyPath)
-  })
-  
+  const {
+    data: commentary,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["commentary", sessionId, hierarchyPath],
+    queryFn: () => api.generateCommentary(sessionId, hierarchyPath),
+  });
+
   // Render AI insights with proper loading states
   // Enable commentary regeneration
   // Show cross-reference navigation links
-}
+};
 ```
 
 **Deliverables:**
+
 - [ ] `AICommentaryPanel` component implemented
 - [ ] Loading and error states handled
 - [ ] Commentary regeneration functionality
@@ -653,51 +704,55 @@ export const AICommentaryPanel: React.FC<AICommentaryPanelProps> = ({
 **Objective**: Build compelling variance visualizations
 
 **Files**:
+
 - `frontend/src/components/visualization/VarianceWaterfall.tsx`
 - `frontend/src/components/visualization/BridgeChart.tsx`
 - `frontend/src/components/visualization/ComparisonBars.tsx`
 
 **Waterfall Chart:**
+
 ```typescript
 interface VarianceWaterfallProps {
-  oldValue: number
-  newValue: number
-  components: VarianceComponent[]
-  title: string
+  oldValue: number;
+  newValue: number;
+  components: VarianceComponent[];
+  title: string;
 }
 
 export const VarianceWaterfall: React.FC<VarianceWaterfallProps> = ({
   oldValue,
   newValue,
   components,
-  title
+  title,
 }) => {
   // Implement waterfall visualization showing
   // starting value → components → ending value
   // Using Recharts with custom waterfall logic
-}
+};
 ```
 
 **Bridge Chart Implementation:**
+
 ```typescript
 interface BridgeChartProps {
-  progression: ProgressionStep[]
-  title: string
-  onStepClick: (step: ProgressionStep) => void
+  progression: ProgressionStep[];
+  title: string;
+  onStepClick: (step: ProgressionStep) => void;
 }
 
 export const BridgeChart: React.FC<BridgeChartProps> = ({
   progression,
   title,
-  onStepClick
+  onStepClick,
 }) => {
   // Show progression from old model through
   // key drivers to new model values
   // Enable click-to-drill-down on steps
-}
+};
 ```
 
 **Deliverables:**
+
 - [ ] Waterfall charts implemented
 - [ ] Bridge charts functional
 - [ ] Side-by-side comparison bars
@@ -709,16 +764,18 @@ export const BridgeChart: React.FC<BridgeChartProps> = ({
 **Objective**: Comprehensive export and reporting functionality
 
 **Files**:
+
 - `backend/app/api/endpoints/export.py`
 - `frontend/src/components/export/ExportControls.tsx`
 
 **Export Functionality:**
+
 ```python
 # backend/app/api/endpoints/export.py
 @router.get("/export/{session_id}/pdf")
 async def export_variance_report(session_id: str) -> StreamingResponse
 
-@router.get("/export/{session_id}/excel") 
+@router.get("/export/{session_id}/excel")
 async def export_variance_data(session_id: str) -> StreamingResponse
 
 @router.get("/export/{session_id}/json")
@@ -726,24 +783,26 @@ async def export_hierarchy_tree(session_id: str) -> Dict
 ```
 
 **Export UI:**
+
 ```typescript
 interface ExportControlsProps {
-  sessionId: string
-  hierarchyPath: string
+  sessionId: string;
+  hierarchyPath: string;
 }
 
 export const ExportControls: React.FC<ExportControlsProps> = ({
   sessionId,
-  hierarchyPath
+  hierarchyPath,
 }) => {
   // Provide export options for current view
   // PDF report generation
-  // Excel data export  
+  // Excel data export
   // JSON hierarchy export
-}
+};
 ```
 
 **Deliverables:**
+
 - [ ] PDF report generation
 - [ ] Excel variance data export
 - [ ] JSON hierarchy tree export
@@ -761,13 +820,14 @@ export const ExportControls: React.FC<ExportControlsProps> = ({
 **Testing Strategy:**
 
 **Backend Tests:**
+
 ```python
 # tests/test_dual_parser.py
 def test_parse_consistent_model_pair()
 def test_handle_inconsistent_formats()
 def test_period_alignment_with_different_horizons()
 
-# tests/test_structure_detector.py  
+# tests/test_structure_detector.py
 def test_hierarchy_detection_accuracy()
 def test_formula_vs_hardcoded_classification()
 
@@ -777,28 +837,31 @@ def test_statistical_significance_assessment()
 ```
 
 **Frontend Tests:**
+
 ```typescript
 // tests/components/DualFileUpload.test.tsx
-describe('DualFileUpload', () => {
-  it('validates file formats correctly')
-  it('handles upload errors gracefully') 
-  it('shows progress during upload')
-})
+describe("DualFileUpload", () => {
+  it("validates file formats correctly");
+  it("handles upload errors gracefully");
+  it("shows progress during upload");
+});
 
 // tests/components/VarianceDashboard.test.tsx
-describe('VarianceDashboard', () => {
-  it('displays variance data correctly')
-  it('enables drill-down navigation')
-  it('handles loading and error states')
-})
+describe("VarianceDashboard", () => {
+  it("displays variance data correctly");
+  it("enables drill-down navigation");
+  it("handles loading and error states");
+});
 ```
 
 **Integration Tests:**
+
 - End-to-end workflow testing
 - Performance testing with large Excel files
 - Cross-browser compatibility testing
 
 **Deliverables:**
+
 - [ ] Unit test coverage >80%
 - [ ] Integration tests passing
 - [ ] Performance benchmarks met
@@ -810,24 +873,28 @@ describe('VarianceDashboard', () => {
 **Objective**: Final polish and deployment preparation
 
 **Performance Optimization:**
+
 - Excel parsing optimization for large files
 - Frontend bundle optimization
 - API response caching
 - Memory usage optimization
 
 **UI/UX Polish:**
+
 - Accessibility improvements
 - Mobile responsiveness
 - Loading state animations
 - Error message clarity
 
 **Deployment Preparation:**
+
 - Docker containerization
 - Environment configuration
 - Security hardening
 - Monitoring setup
 
 **Deliverables:**
+
 - [ ] Performance targets met
 - [ ] UI/UX polished and accessible
 - [ ] Deployment ready
@@ -839,18 +906,21 @@ describe('VarianceDashboard', () => {
 ## Success Criteria
 
 ### Technical Milestones
+
 - [ ] Successfully parse 95% of paired financial models with consistent structure
-- [ ] Accurately identify drill-down hierarchies in 90% of models  
+- [ ] Accurately identify drill-down hierarchies in 90% of models
 - [ ] Provide mathematically correct variance calculations at all levels
 - [ ] Complete analysis workflow in <60 seconds for typical model pairs
 
 ### User Experience Milestones
+
 - [ ] Intuitive dual upload process with clear guidance
 - [ ] Seamless navigation between hierarchy levels
 - [ ] Meaningful AI commentary for 95% of significant variances
 - [ ] Export functionality meeting business reporting needs
 
-### Performance Milestones  
+### Performance Milestones
+
 - [ ] Dual model processing: <45 seconds
 - [ ] Structure detection: <15 seconds
 - [ ] Dashboard rendering: <5 seconds
@@ -861,16 +931,19 @@ describe('VarianceDashboard', () => {
 ## Risk Mitigation
 
 ### Technical Risks
+
 - **Excel format variations**: Build extensive test suite with diverse model formats
 - **Structure detection accuracy**: Implement fallback manual mapping options
 - **AI API reliability**: Build caching and offline functionality
 
 ### User Experience Risks
+
 - **Learning curve**: Extensive user testing and iterative UI improvements
 - **Performance with large files**: Implement progressive loading and chunking
 - **Export quality**: Validate with real business reporting requirements
 
 ### Project Risks
+
 - **Scope creep**: Strict adherence to defined MVP features
 - **Timeline pressure**: Buffer time built into each phase
 - **Integration complexity**: Early and frequent integration testing

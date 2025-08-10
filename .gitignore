@@ -97,6 +97,10 @@ Thumbs.db
 uploads/
 sessions/
 cache/
+backend/uploads/
+backend/server.log
+backend/*.log
+frontend/dev.log
 
 # Test files
 *.test.js

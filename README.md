@@ -7,7 +7,7 @@ A dual Excel financial model comparison tool with AI-powered variance analysis a
 The Financial Model Analyzer allows you to upload two Excel financial models (Old vs New) from different periods and automatically:
 
 - **Analyzes variances** across all KPIs and hierarchy levels
-- **Detects model structure** dynamically without assuming naming conventions  
+- **Detects model structure** dynamically without assuming naming conventions
 - **Provides AI-powered commentary** explaining business drivers of changes
 - **Enables unlimited drill-down** to investigate variances at any level
 - **Supports multiple comparison modes** (projection vs actual, projection vs projection)
@@ -23,17 +23,20 @@ The Financial Model Analyzer allows you to upload two Excel financial models (Ol
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    cd financial_model_analyzer
    ```
 
 2. **Set up the backend**
+
    ```bash
    cd backend
    pip install -r requirements.txt
    ```
 
 3. **Set up the frontend**
+
    ```bash
    cd ../frontend
    npm install
@@ -48,12 +51,14 @@ The Financial Model Analyzer allows you to upload two Excel financial models (Ol
 ### Running the Application
 
 1. **Start the backend server**
+
    ```bash
    cd backend
    python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
 2. **Start the frontend development server**
+
    ```bash
    cd frontend
    npm run dev
@@ -92,6 +97,7 @@ financial_model_analyzer/
 ## Features
 
 ### Current (Phase 1 Complete)
+
 - ✅ **Dual file upload** with validation
 - ✅ **Basic project structure** and API endpoints
 - ✅ **Responsive React dashboard** with navigation
@@ -99,8 +105,9 @@ financial_model_analyzer/
 - ✅ **Executive summary** display
 
 ### Coming Soon
+
 - 🔄 **Excel parsing engine** (Phase 2)
-- 🔄 **Dynamic structure detection** (Phase 3)  
+- 🔄 **Dynamic structure detection** (Phase 3)
 - 🔄 **Variance calculation** (Phase 4)
 - 🔄 **AI commentary integration** (Phase 5)
 - 🔄 **Advanced visualizations** (Phase 6)
@@ -109,6 +116,7 @@ financial_model_analyzer/
 ## API Documentation
 
 ### Upload Models
+
 ```http
 POST /api/v1/upload-models
 Content-Type: multipart/form-data
@@ -118,12 +126,14 @@ new_file: File
 ```
 
 ### Get Variance Analysis
+
 ```http
 GET /api/v1/variance/{session_id}
 GET /api/v1/variance/{session_id}/{hierarchy_path}
 ```
 
-### Get Model Structure  
+### Get Model Structure
+
 ```http
 GET /api/v1/structure/{session_id}
 ```
@@ -133,23 +143,13 @@ See the [BUILD_PLAN.md](BUILD_PLAN.md) for complete API specifications.
 ## Development Status
 
 **Current Phase**: Phase 1 Complete ✅  
-**Next Phase**: Phase 2 - Excel Processing Engine  
+**Next Phase**: Phase 2 - Excel Processing Engine
 
 Track progress in our [detailed build plan](BUILD_PLAN.md).
 
-## Sample Models
-
-The `/Models` directory contains sample financial models from different investment banks:
-
-- **BC (Barclays)**: Tyson Foods models from different periods
-- **BOFA (Bank of America)**: Tyson Foods analysis updates  
-- **GS (Goldman Sachs)**: Comparative Tyson Foods models
-
-These demonstrate the variety of Excel formats the tool is designed to handle.
-
 ## Contributing
 
-This is currently under active development following our [BUILD_PLAN.md](BUILD_PLAN.md). 
+This is currently under active development following our [BUILD_PLAN.md](BUILD_PLAN.md).
 
 ## License
 
@@ -158,5 +158,6 @@ Private development project.
 ## Support
 
 For technical questions or issues, refer to:
+
 - [BUILD_PLAN.md](BUILD_PLAN.md) - Implementation details
 - [PROJECT_PLAN.md](PROJECT_PLAN.md) - High-level specifications
