@@ -116,92 +116,110 @@ async def get_executive_summary(session_id: str, period: str = "3Q25E"):
                     new_period_found = None
                     
                     # Check for exact period match first
-                    for p in old_stmt.get("periods", []):
-                        if p.get("name") == period:
-                            old_period_found = period
-                            break
+                    # Handle both serialized dict format and dataclass format
+                    old_periods = old_stmt.get("periods", []) if isinstance(old_stmt, dict) else getattr(old_stmt, "periods", [])
+                    new_periods = new_stmt.get("periods", []) if isinstance(new_stmt, dict) else getattr(new_stmt, "periods", [])
                     
-                    for p in new_stmt.get("periods", []):
-                        if p.get("name") == period:
-                            new_period_found = period
-                            break
+                    if period in old_periods:
+                        old_period_found = period
+                    
+                    if period in new_periods:
+                        new_period_found = period
                     
                     # If exact match not found, try flexible matching
                     if not old_period_found or not new_period_found:
                         logger.info(f"Exact period '{period}' not found, trying flexible matching...")
                         # Find any period containing the requested period
-                        for p in old_stmt.get("periods", []):
-                            if period in p.get("name", "") or p.get("name", "") in period:
-                                old_period_found = p.get("name")
-                                logger.info(f"Found similar old period: {old_period_found}")
-                                break
+                        if not old_period_found:
+                            for p in old_periods:
+                                if period in p or p in period:
+                                    old_period_found = p
+                                    logger.info(f"Found similar old period: {old_period_found}")
+                                    break
                         
-                        for p in new_stmt.get("periods", []):
-                            if period in p.get("name", "") or p.get("name", "") in period:
-                                new_period_found = p.get("name")
-                                logger.info(f"Found similar new period: {new_period_found}")
-                                break
+                        if not new_period_found:
+                            for p in new_periods:
+                                if period in p or p in period:
+                                    new_period_found = p
+                                    logger.info(f"Found similar new period: {new_period_found}")
+                                    break
                     
                     if old_period_found and new_period_found:
                         # Calculate variances for this statement
                         statement_variances = {}
                         
-                        old_line_items = old_stmt.get("line_items", [])
-                        new_line_items = new_stmt.get("line_items", [])
+                        # Note: line_items is Dict[int, LineItem] from universal_parser (row-based)
+                        # Use attribute access for FinancialStatement objects
+                        old_line_items_dict = getattr(old_stmt, "line_items", {}) if hasattr(old_stmt, "line_items") else old_stmt.get("line_items", {})
+                        new_line_items_dict = getattr(new_stmt, "line_items", {}) if hasattr(new_stmt, "line_items") else new_stmt.get("line_items", {})
                         
-                        logger.info(f"Matching line items: {len(old_line_items)} old vs {len(new_line_items)} new")
+                        logger.info(f"Matching line items: {len(old_line_items_dict)} old vs {len(new_line_items_dict)} new")
                         
-                        # Simple line item matching by name
-                        for old_item in old_line_items:
-                            old_name = old_item.get("name", "")
-                            old_periods = old_item.get("periods", {})
+                        # Row-based matching - match by row number first, then by name
+                        for row_or_name, old_line_item in old_line_items_dict.items():
+                            # Extract line item name and data from LineItem objects
+                            old_line_item_name = old_line_item.get("name") if isinstance(old_line_item, dict) else getattr(old_line_item, 'name', str(row_or_name))
+                            old_values = old_line_item.get("values", {}) if isinstance(old_line_item, dict) else getattr(old_line_item, 'values', {})
                             
-                            # Find matching new item
-                            for new_item in new_line_items:
-                                new_name = new_item.get("name", "")
-                                new_periods = new_item.get("periods", {})
+                            # Try to find matching new item by row number first, then by name
+                            new_line_item = None
+                            matched_key = None
+                            
+                            # Method 1: Exact row number match (preferred)
+                            if row_or_name in new_line_items_dict:
+                                new_line_item = new_line_items_dict[row_or_name]
+                                matched_key = row_or_name
+                            # Method 2: Name-based match (fallback for when row numbers don't align)
+                            else:
+                                for new_key, new_item in new_line_items_dict.items():
+                                    new_name = new_item.get("name") if isinstance(new_item, dict) else getattr(new_item, 'name', str(new_key))
+                                    if new_name == old_line_item_name:
+                                        new_line_item = new_item
+                                        matched_key = new_key
+                                        break
+                            
+                            if new_line_item:
+                                new_values = new_line_item.get("values", {}) if isinstance(new_line_item, dict) else getattr(new_line_item, 'values', {})
                                 
-                                # Exact name match
-                                if old_name == new_name:
-                                    # Get values for the period
-                                    old_cell_info = old_periods.get(old_period_found, {})
-                                    new_cell_info = new_periods.get(new_period_found, {})
-                                    
-                                    old_value = old_cell_info.get("value", 0) if isinstance(old_cell_info, dict) else 0
-                                    new_value = new_cell_info.get("value", 0) if isinstance(new_cell_info, dict) else 0
-                                    
-                                    # Convert to float if needed
-                                    try:
-                                        old_value = float(old_value) if old_value is not None else 0.0
-                                        new_value = float(new_value) if new_value is not None else 0.0
-                                    except (ValueError, TypeError):
-                                        old_value = 0.0
-                                        new_value = 0.0
-                                    
-                                    # Calculate variance
-                                    absolute_variance = new_value - old_value
-                                    percentage_variance = 0.0
-                                    if old_value != 0:
-                                        percentage_variance = (absolute_variance / old_value) * 100
-                                    
-                                    # Determine format and key item status
-                                    from app.utils.format_detector import determine_format_and_key_status
-                                    format_type, is_key_item = determine_format_and_key_status(old_name, statement_type)
-                                    
-                                    statement_variances[old_name] = {
-                                        "line_item_name": old_name,
-                                        "old_value": old_value,
-                                        "new_value": new_value,
-                                        "absolute_variance": absolute_variance,
-                                        "percentage_variance": percentage_variance,
-                                        "drill_down_available": False,  # For now
-                                        "has_formula": bool(old_cell_info.get("formula")) if isinstance(old_cell_info, dict) else False,
-                                        "row_index": old_item.get("row_index", 0),  # Excel row number for tracing
-                                        "sheet_name": old_item.get("sheet_name", ""),  # Sheet name for context
-                                        "format_type": format_type,  # How to display the values
-                                        "is_key_item": is_key_item  # Whether to highlight this item
-                                    }
-                                    break
+                                # Get values for the found periods
+                                old_value = old_values.get(old_period_found, 0) if old_period_found else 0
+                                new_value = new_values.get(new_period_found, 0) if new_period_found else 0
+                                
+                                # Convert to float if needed
+                                try:
+                                    old_value = float(old_value) if old_value is not None else 0.0
+                                    new_value = float(new_value) if new_value is not None else 0.0
+                                except (ValueError, TypeError):
+                                    old_value = 0.0
+                                    new_value = 0.0
+                                
+                                # Calculate variance
+                                absolute_variance = new_value - old_value
+                                percentage_variance = 0.0
+                                if old_value != 0:
+                                    percentage_variance = (absolute_variance / old_value) * 100
+                                
+                                # Determine format and key item status
+                                from app.utils.format_detector import determine_format_and_key_status
+                                format_type, is_key_item = determine_format_and_key_status(str(old_line_item_name), statement_type)
+                                
+                                # Get additional info from LineItem if available
+                                row_number = getattr(old_line_item, 'row_number', 0) if hasattr(old_line_item, 'row_number') else old_line_item.get("row_number", 0)
+                                formula = getattr(old_line_item, 'formula', None) if hasattr(old_line_item, 'formula') else old_line_item.get("formula", None)
+                                
+                                statement_variances[old_line_item_name] = {
+                                    "line_item_name": old_line_item_name,
+                                    "old_value": old_value,
+                                    "new_value": new_value,
+                                    "absolute_variance": absolute_variance,
+                                    "percentage_variance": percentage_variance,
+                                    "drill_down_available": False,  # For now
+                                    "has_formula": bool(formula),
+                                    "row_index": row_number,  # Excel row number for tracing
+                                    "sheet_name": old_stmt.get("sheet_name", "") if isinstance(old_stmt, dict) else getattr(old_stmt, "sheet_name", ""),  # Sheet name for context
+                                    "format_type": format_type,  # How to display the values
+                                    "is_key_item": is_key_item  # Whether to highlight this item
+                                }
                         
                         if statement_variances:
                             all_variances[statement_type] = statement_variances
@@ -274,10 +292,12 @@ async def get_executive_summary(session_id: str, period: str = "3Q25E"):
     # Add line item counts
     old_income = old_model.get("income_statement", {})
     new_income = new_model.get("income_statement", {})
-    
+
     if old_income and new_income:
-        old_line_count = len(old_income.get("line_items", []))
-        new_line_count = len(new_income.get("line_items", []))
+        old_line_items = old_income.get("line_items", {}) if isinstance(old_income, dict) else getattr(old_income, "line_items", {})
+        new_line_items = new_income.get("line_items", {}) if isinstance(new_income, dict) else getattr(new_income, "line_items", {})
+        old_line_count = len(old_line_items)
+        new_line_count = len(new_line_items)
         insights.append(f"Income statement analysis: {old_line_count} vs {new_line_count} line items detected")
     
     executive_summary["executive_summary"]["key_insights"] = insights

@@ -17,7 +17,11 @@ import { StatementSelector } from './StatementSelector'
 import { DynamicPeriodSelector } from './DynamicPeriodSelector'
 import { DrillDownModal } from '../drilldown/DrillDownModal'
 
-export const VarianceAnalysisDashboard: React.FC = () => {
+interface VarianceAnalysisDashboardProps {
+  onNewAnalysis: () => void
+}
+
+export const VarianceAnalysisDashboard: React.FC<VarianceAnalysisDashboardProps> = ({ onNewAnalysis }) => {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
   
@@ -179,7 +183,10 @@ export const VarianceAnalysisDashboard: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  onNewAnalysis()
+                  navigate('/')
+                }}
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="h-5 w-5 mr-2" />

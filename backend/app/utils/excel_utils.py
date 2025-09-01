@@ -316,23 +316,8 @@ def is_valid_line_item(first_cell, row, period_columns: List[int]) -> bool:
     
     return False
 
-def is_potential_line_item(first_cell, row, period_columns: List[int]) -> bool:
-    """
-    UNIVERSAL INCLUSIVE check: capture ALL rows with any text in first column
-    No business logic, no filtering - let user decide what to hide
-    """
-    # Only exclude completely empty first cells
-    if not first_cell or not str(first_cell).strip():
-        return False
-    
-    # Skip only obvious Excel formatting rows (pure symbols)
-    first_str = str(first_cell).strip()
-    if is_pure_formatting(first_str):
-        return False
-    
-    # Include EVERYTHING else - section headers, line items, subtotals, etc.
-    # Don't require period data - some important rows might not have numbers
-    return True
+
+# REMOVED: is_potential_line_item function - was only used by removed extract_line_items_from_sheet
 
 def is_pure_formatting(text: str) -> bool:
     """
@@ -380,31 +365,7 @@ def is_empty_row(row, period_columns: List[int]) -> bool:
     
     return True
 
-def extract_any_numeric_value(cell) -> float:
-    """
-    Extract numeric value from any format
-    Much more permissive than previous logic
-    """
-    if isinstance(cell.value, (int, float)):
-        return float(cell.value)
-    
-    if isinstance(cell.value, str):
-        # Try to parse: "1,234.5", "$1,234M", "(123.4)", etc.
-        import re
-        cleaned = re.sub(r'[^\d.-]', '', cell.value)
-        try:
-            return float(cleaned) if cleaned else 0.0
-        except:
-            return 0.0
-    
-    if hasattr(cell, 'data_type') and cell.data_type == 'f':  # Formula
-        # Try to get calculated value
-        try:
-            return float(cell.value) if cell.value is not None else 0.0
-        except:
-            return 0.0
-    
-    return 0.0  # Default for anything else
+# REMOVED: extract_any_numeric_value function - was only used by removed extract_line_items_from_sheet
 
 
 def should_stop_processing(current_row_idx: int, empty_row_count: int, line_item_name: str, statement_type: str) -> bool:
@@ -440,83 +401,5 @@ def is_empty_or_formatting(text: str) -> bool:
     
     return False
 
-def extract_line_items_from_sheet(sheet, period_columns: List[int], sheet_name: str, statement_type: str, period_header_row: int, periods_list: List['Period']) -> List['LineItem']:
-    """
-    Extract all meaningful line items from a sheet with proper period mapping
-    Start from row after period header and use actual period names
-    Enhanced logic: Check EPS before processing, only reset empty counter on valid items
-    """
-    from app.models.financial import LineItem, CellInfo
-    
-    logger.info(f"📋 Extracting line items from {sheet_name} ({statement_type})")
-    logger.info(f"   Starting from row {period_header_row + 1} (after period header)")
-    logger.info(f"   Using {len(periods_list)} period names from header")
-    
-    # Create column index to period name mapping
-    period_name_map = {}
-    for period in periods_list:
-        if period.sheet_name == sheet_name:
-            period_name_map[period.column_index] = period.name
-    
-    logger.debug(f"   Period mapping: {period_name_map}")
-    
-    line_items = []
-    start_row = period_header_row + 1
-    consecutive_empty_rows = 0
-    max_scan_rows = 200  # Safety limit
-    
-    for row_idx, row in enumerate(sheet.iter_rows(min_row=start_row), start_row):
-        
-        # Safety limit
-        if row_idx > period_header_row + max_scan_rows:
-            logger.info(f"🛑 Stopping at row {row_idx}: Reached safety limit")
-            break
-        
-        # Check for 10 consecutive empty rows - STOP immediately
-        if is_empty_row(row, period_columns):
-            consecutive_empty_rows += 1
-            if consecutive_empty_rows >= 10:
-                logger.info(f"🛑 Stopping at row {row_idx}: 10 consecutive empty rows")
-                break
-            continue
-            
-        first_cell = row[0].value
-        
-        if is_potential_line_item(first_cell, row, period_columns):
-            consecutive_empty_rows = 0  # Reset ONLY on valid line items
-            # Extract period values with actual period names
-            periods = {}
-            
-            for col_idx in period_columns:
-                if col_idx < len(row):
-                    cell = row[col_idx]
-                    cell_value = extract_any_numeric_value(cell)
-                    
-                    # Use actual period name instead of temporary key
-                    period_name = period_name_map.get(col_idx, f"period_{col_idx}")
-                    
-                    periods[period_name] = CellInfo(
-                        value=cell_value,
-                        formula=cell.formula if hasattr(cell, 'formula') else None,
-                        is_hard_coded=cell.data_type != 'f' if hasattr(cell, 'data_type') else True,
-                        row=row_idx,
-                        column=cell.coordinate[0] if hasattr(cell, 'coordinate') else 'A'
-                    )
-            
-            if periods:  # Only add if we found some data
-                line_item = LineItem(
-                    name=str(first_cell).strip(),
-                    row_index=row_idx,
-                    periods=periods,
-                    sheet_name=sheet_name,
-                    statement_type=statement_type,
-                    row=row_idx  # Legacy compatibility
-                )
-                line_items.append(line_item)
-                logger.debug(f"  📝 Line item: '{line_item.name}' (row {row_idx}) with {len(periods)} periods")
-                
-                # Stop conditions are now handled before processing
-                # No need for post-processing stop check
-    
-    logger.info(f"✅ Extracted {len(line_items)} line items from {sheet_name}")
-    return line_items
+# REMOVED: extract_line_items_from_sheet function - duplicate of UniversalExcelParser._extract_line_items
+# The UniversalExcelParser._extract_line_items method is the active implementation

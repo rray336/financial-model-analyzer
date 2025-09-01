@@ -7,10 +7,19 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 import logging
+import dataclasses
 from dataclasses import dataclass
 from fuzzywuzzy import fuzz
 from .formula_analyzer import FormulaAnalyzer, FormulaComponent, DrillDownResult
 from .template_parser import TemplateBasedPeriodParser, PeriodTemplate
+
+
+# Import additional classes from dual_parser for enhanced functionality
+try:
+    from app.models.financial import SheetType, FinancialModel
+    from app.utils.excel_utils import detect_financial_keywords, find_period_header_row
+except ImportError as e:
+    print(f"Could not import some classes: {e}. Using fallbacks.")
 
 logger = logging.getLogger(__name__)
 
@@ -20,17 +29,13 @@ class LineItem:
     row_number: int
     values: Dict[str, float]  # period -> value mapping
     formula: Optional[str] = None
-    dependencies: List[str] = None  # Cell references for drill-down
-
-    def __post_init__(self):
-        if self.dependencies is None:
-            self.dependencies = []
+    dependencies: List[str] = dataclasses.field(default_factory=list)  # Cell references for drill-down
 
 @dataclass
 class FinancialStatement:
     sheet_name: str
     periods: List[str]  # Detected from column headers
-    line_items: Dict[str, LineItem]  # line_item_name -> LineItem
+    line_items: Dict[int, LineItem]  # row_number -> LineItem
     period_columns: Dict[str, int]  # period -> column_number mapping
 
 @dataclass
@@ -39,11 +44,7 @@ class ModelComparison:
     new_model: Dict[str, FinancialStatement]
     selected_sheets: Dict[str, str]  # statement_type -> sheet_name
     selected_period: str
-    variances: Dict[str, Any] = None
-
-    def __post_init__(self):
-        if self.variances is None:
-            self.variances = {}
+    variances: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
 class UniversalExcelParser:
     """Parse any Excel financial model for variance analysis"""
@@ -509,14 +510,18 @@ class UniversalExcelParser:
         
         return sorted(periods, key=period_sort_key)
     
-    def _extract_line_items(self, sheet, periods: List[str], period_columns: Dict[str, int]) -> Dict[str, LineItem]:
+    def _extract_line_items(self, sheet, periods: List[str], period_columns: Dict[str, int]) -> Dict[int, LineItem]:
         """Extract line items and their values from the sheet"""
-        
         line_items = {}
-        
-        # Start from row after headers (assume headers are in first 5 rows)
-        start_row = 6
-        
+        try:
+            period_header_row = find_period_header_row(sheet)
+            print(f"DEBUG: Detected period header row at Excel row {period_header_row} in sheet '{sheet.title}'")
+            start_row = period_header_row + 1
+            logger.info(f"Detected period header row at {period_header_row}, starting line item extraction from row {start_row}")
+        except Exception as e:
+            logger.warning(f"Could not detect period header row: {e}, defaulting to row 6")
+            start_row = 6
+
         for row_num in range(start_row, sheet.max_row + 1):
             # Check first few columns for line item names
             line_item_name = None
@@ -527,19 +532,19 @@ class UniversalExcelParser:
                     if not self._match_period_pattern(cell_value):
                         line_item_name = cell_value.strip()
                         break
-            
+
             if not line_item_name:
                 continue
-            
+
             # Extract values for each period
             values = {}
             formulas = {}
-            
+
             for period in periods:
                 col_num = period_columns.get(period)
                 if col_num:
                     cell = sheet.cell(row=row_num, column=col_num)
-                    
+
                     # Get value (with data_only=False, we get formulas)
                     if cell.data_type == 'f':  # Formula
                         formulas[period] = cell.value
@@ -556,20 +561,22 @@ class UniversalExcelParser:
                             values[period] = 0.0
                     elif isinstance(cell.value, (int, float)):
                         values[period] = float(cell.value)
-            
-            # Only add line items that have at least one non-zero value
-            if values and any(abs(v) > 0.001 for v in values.values()):
+
+            # Only add line items that have at least one non-zero value OR formulas
+            has_meaningful_data = (values and any(abs(v) > 0.001 for v in values.values())) or bool(formulas)
+            if has_meaningful_data:
+                # Use row number as key - this naturally handles duplicates and preserves Excel structure
                 # Get the main formula (from the first period with a formula)
                 main_formula = next((f for f in formulas.values() if f), None)
-                
-                line_items[line_item_name] = LineItem(
+
+                line_items[row_num] = LineItem(
                     name=line_item_name,
                     row_number=row_num,
                     values=values,
                     formula=main_formula,
                     dependencies=self._extract_formula_dependencies(main_formula) if main_formula else []
                 )
-        
+
         return line_items
     
     def _extract_formula_dependencies(self, formula: str) -> List[str]:
@@ -839,3 +846,92 @@ class UniversalExcelParser:
         except Exception as e:
             logger.warning(f"Could not preview drill-down for {line_item_name}: {e}")
             return {"can_drill_down": False, "reason": "Analysis error"}
+    
+    
+    def _detect_sheet_type_enhanced(self, sheet_name: str, sheet_info: Dict[str, Any] = None) -> str:
+        """
+        Enhanced sheet type detection based on name and content analysis
+        Copied from dual_parser for better compatibility
+        """
+        try:
+            # First check sheet name
+            sheet_name_lower = sheet_name.lower()
+            
+            # Income Statement keywords
+            if any(keyword in sheet_name_lower for keyword in 
+                   ['income', 'p&l', 'profit', 'loss', 'revenue', 'sales', 'earnings']):
+                return "income_statement"
+            
+            # Balance Sheet keywords
+            elif any(keyword in sheet_name_lower for keyword in 
+                    ['balance', 'sheet', 'assets', 'liabilities', 'equity']):
+                return "balance_sheet"
+            
+            # Cash Flow keywords
+            elif any(keyword in sheet_name_lower for keyword in 
+                    ['cash', 'flow', 'operating', 'investing', 'financing']):
+                return "cash_flow"
+            
+            # If content analysis is available, use it
+            if sheet_info:
+                try:
+                    sample_data = sheet_info.get('sample_data', [])
+                    all_text = []
+                    
+                    for row_data in sample_data:
+                        for cell_data in row_data:
+                            value = cell_data.get('value')
+                            if isinstance(value, str):
+                                all_text.append(value)
+                    
+                    combined_text = ' '.join(all_text).lower()
+                    
+                    # Simple keyword scoring
+                    income_keywords = ['revenue', 'sales', 'income', 'profit', 'loss', 'earnings', 'expense']
+                    balance_keywords = ['assets', 'liabilities', 'equity', 'capital', 'retained', 'current']
+                    cashflow_keywords = ['operating', 'investing', 'financing', 'cash', 'flow', 'payment']
+                    
+                    income_score = sum(1 for keyword in income_keywords if keyword in combined_text)
+                    balance_score = sum(1 for keyword in balance_keywords if keyword in combined_text)
+                    cashflow_score = sum(1 for keyword in cashflow_keywords if keyword in combined_text)
+                    
+                    if income_score > balance_score and income_score > cashflow_score:
+                        return "income_statement"
+                    elif balance_score > cashflow_score:
+                        return "balance_sheet"
+                    elif cashflow_score > 0:
+                        return "cash_flow"
+                        
+                except Exception as e:
+                    logger.debug(f"Content analysis failed for {sheet_name}: {e}")
+            
+            return "unknown"
+            
+        except Exception as e:
+            logger.warning(f"Sheet type detection failed for {sheet_name}: {e}")
+            return "unknown"
+    
+    def _consolidate_periods_enhanced(self, all_periods: List[str]) -> List[str]:
+        """
+        Enhanced period consolidation preserving Excel column order
+        Copied from dual_parser for better compatibility
+        """
+        logger.info(f"📊 Consolidating {len(all_periods)} periods from all sheets")
+        
+        try:
+            # Simple deduplication by name while preserving order
+            seen_names = set()
+            consolidated = []
+            
+            for period in all_periods:
+                if isinstance(period, str) and period not in seen_names:
+                    consolidated.append(period)
+                    seen_names.add(period)
+                    logger.debug(f"  📋 Added period: '{period}'")
+            
+            logger.info(f"✅ Consolidated to {len(consolidated)} unique periods in Excel order")
+            return consolidated
+            
+        except Exception as e:
+            logger.error(f"Period consolidation failed: {e}")
+            return all_periods if isinstance(all_periods, list) else []

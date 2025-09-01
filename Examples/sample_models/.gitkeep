@@ -1,0 +1,7 @@
+# Place your sample Excel financial models here for testing
+# 
+# Recommended structure:
+# - old_company_model.xlsx (baseline comparison file)  
+# - new_company_model.xlsx (target analysis file)
+#
+# Each file should contain Income Statement, Balance Sheet, and Cash Flow sheets

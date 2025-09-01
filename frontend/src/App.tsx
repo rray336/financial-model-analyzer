@@ -26,14 +26,6 @@ function App() {
                   Financial Model Analyzer
                 </h1>
               </div>
-              {currentSession && (
-                <button
-                  onClick={handleNewAnalysis}
-                  className="btn-outline"
-                >
-                  New Analysis
-                </button>
-              )}
             </div>
           </div>
         </header>
@@ -66,7 +58,7 @@ function App() {
             />
             <Route 
               path="/analysis/:sessionId/*" 
-              element={<VarianceAnalysisDashboard />} 
+              element={<VarianceAnalysisDashboard onNewAnalysis={handleNewAnalysis} />} 
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
